@@ -17,8 +17,25 @@ const __dirname = path.dirname(__filename);
 dotenv.config();
 const app = express();
 
-app.use(cors());
+// Enhanced CORS configuration
+app.use(cors({
+  origin: '*', // Allow all origins for now
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  credentials: false, // Set to false for now to avoid preflight issues
+  optionsSuccessStatus: 200
+}));
+
+// Explicit OPTIONS handler for all routes
+app.options('*', (req, res) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  res.status(200).send();
+});
+
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // Serve static files from parent directory (Frontend files)
 app.use(express.static(path.join(__dirname, '..')));
@@ -27,6 +44,22 @@ app.use(express.static(path.join(__dirname, '..')));
 app.use((req, res, next) => {
   console.log(`${req.method} ${req.path}`);
   next();
+});
+
+// Test route for debugging
+app.get('/api/test', (req, res) => {
+  res.json({ 
+    message: 'Backend is working!', 
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV,
+    path: req.path,
+    method: req.method
+  });
+});
+
+// Root test route
+app.get('/test', (req, res) => {
+  res.json({ message: 'Root test working!' });
 });
 
 // API Routes
@@ -68,7 +101,6 @@ mongoose.connect(process.env.MONGO_URI, {
   });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`✅ Server running on port ${PORT}`);
-  console.log(`🌐 API URL: http://localhost:${PORT}`);
-});
+
+// Export for Vercel (this will auto-start the server)
+export default app;
